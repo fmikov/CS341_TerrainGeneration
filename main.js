@@ -47,29 +47,60 @@ grid.position.set(center, center, center);
 
 camera.position.z = size * 1.5;
 
+const simplex = new SimplexNoise();
+const gridSize = 40;
+const cubeSize2 = 1;
+const noiseScale = 0.5;
+function getColorFromNoise(x, y, z) {
+  const noise = Perlin3D(x * noiseScale, y * noiseScale, z * noiseScale);
+  const hue = (noise + 1) / 2; // Normalize noise to range [0, 1]
+  return new THREE.Color().setHSL(hue, 1, 0.5); // Convert HSL color
+}
+for (let x = 0; x < gridSize; x++) {
+  for (let y = 0; y < gridSize; y++) {
+    for (let z = 0; z < gridSize; z++){
+      const val = getNoiseValue(x, y, z);
+      const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+      console.log(getNoiseValue(x, y, z));
+      //const color = new THREE.Color(val, val, val);
+      const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xaaaaaa });
+      const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+      // Position the cube within the grid
+      cube.position.x = (x - gridSize / 2) * cubeSize;
+      cube.position.y = (y - gridSize / 2) * cubeSize;
+      cube.position.z = (z - gridSize / 2) * cubeSize;
+
+      if(val > 0.3){
+        scene.add(cube);
+      }
+    }
+  }
+}
+
 
 function animate() {
   requestAnimationFrame(animate);
 
-  let i = 0;
-  for (let x = 0; x < size; x++) {
-    for (let y = 0; y < size; y++) {
-      for (let z = 0; z < size; z++) {
-        cube.position.set(x, y, z);
-        const val = Perlin3D(x, y, z)*100;
-        const c = new THREE.Color(val, val, val);
-        const material2 = new THREE.MeshNormalMaterial();
-        cubes.material = material2;
-        cubes.setColorAt(i, c);
-        cube.updateMatrix();
-        cubes.setMatrixAt(i, cube.matrix);
-        i++;
-      }
-    }
-  }
+  // let i = 0;
+  // for (let x = 0; x < size; x++) {
+  //   for (let y = 0; y < size; y++) {
+  //     for (let z = 0; z < size; z++) {
+  //       cube.position.set(x, y, z);
+  //       const val = Perlin3D(x, y, z)*100;
+  //       const c = new THREE.Color(val, val, val);
+  //       const material2 = new THREE.MeshNormalMaterial();
+  //       cubes.material = material2;
+  //       cubes.setColorAt(i, c);
+  //       cube.updateMatrix();
+  //       cubes.setMatrixAt(i, cube.matrix);
+  //       i++;
+  //     }
+  //   }
+  // }
 
-  cubes.instanceMatrix.needsUpdate = true;
-  cubes.instanceColor.needsUpdate = true;
+  // cubes.instanceMatrix.needsUpdate = true;
+  // cubes.instanceColor.needsUpdate = true;
 
   controls.update();
   renderer.render(scene, camera);
