@@ -19,7 +19,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 
 const grid = new THREE.Group();
 
-const cubeSize = 0.9;
+const cubeSize = 1;
 const size = 50;
 const gap = 0.01;
 
@@ -69,8 +69,11 @@ let i = 0;
   //lighting
   const ambient = new THREE.AmbientLight(0x404040);
   const directional = new THREE.DirectionalLight(0x404040, 5);
+  const directional2 = new THREE.DirectionalLight(0x404040, 5);
+  console.log(directional.position);
+  directional2.position.set(0, -1, 0);
   
-  scene.add(ambient, directional);
+  scene.add(ambient, directional, directional2);
 
 
 
