@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 //import * as P5 from "https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js";
 import './style.css'
+import { getNoiseValue } from './modules/noise';
 
 
 const renderer = new THREE.WebGLRenderer();
@@ -20,7 +21,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const grid = new THREE.Group();
 
 const cubeSize = 1;
-const size = 50;
+const size = 100;
 const gap = 0.01;
 
 const geometry = new THREE.BoxGeometry(
@@ -49,7 +50,8 @@ grid.position.set(center, center, center);
 
 camera.position.z = size * 1.5;
 
-let i = 0;
+function updateTerrain(){
+  let i = 0;
   for (let x = 0; x < size; x++) {
     for (let y = 0; y < size; y++) {
       for (let z = 0; z < size; z++) {
@@ -58,29 +60,46 @@ let i = 0;
           cube.position.set(x, y, z);
           cube.updateMatrix();
           cubes_instance.setMatrixAt(i, cube.matrix);
-          i++;
+        }else{
+          cube.position.set(0, 0, 0);
+          cube.updateMatrix();
+          cubes_instance.setMatrixAt(i, cube.matrix);
         }
+        cubes_instance.instanceMatrix.needsUpdate = true;
+        i++;
       }
     }
   }
-
+}
+updateTerrain();
 
 
   //lighting
   const ambient = new THREE.AmbientLight(0x404040);
-  const directional = new THREE.DirectionalLight(0x404040, 5);
-  const directional2 = new THREE.DirectionalLight(0x404040, 5);
-  console.log(directional.position);
-  directional2.position.set(0, -1, 0);
+  const directional_up = new THREE.DirectionalLight(0x404040, 5);
+  const directional_down = new THREE.DirectionalLight(0x404040, 5);
+  directional_up.position.set(0, -1, 0);
   
-  scene.add(ambient, directional, directional2);
+  scene.add(ambient, directional_up, directional_down);
 
 
 
+var update_flag = true;
+function setUpdateFlag(bool){
+  update_flag = bool;
+}
 
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
+  if(update_flag){
+    updateTerrain();
+    update_flag = false;
+  }
   renderer.render(scene, camera);
 };
 animate();
+
+
+//exporting for use in other scripts
+export {updateTerrain, setUpdateFlag};
