@@ -1,7 +1,7 @@
-import * as THREE from 'three'
+import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 //import * as P5 from "https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js";
-import './style.css'
+//import './style.css'
 
 
 const renderer = new THREE.WebGLRenderer();
