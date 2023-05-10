@@ -1,7 +1,6 @@
 import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 //import * as P5 from "https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js";
-import './style.css'
 import { getNoiseValue } from './modules/noise';
 
 
@@ -76,8 +75,8 @@ updateTerrain();
 
   //lighting
   const ambient = new THREE.AmbientLight(0x404040);
-  const directional_up = new THREE.DirectionalLight(0x404040, 5);
-  const directional_down = new THREE.DirectionalLight(0x404040, 5);
+  const directional_up = new THREE.DirectionalLight(0x404040, 1);
+  const directional_down = new THREE.DirectionalLight(0x404040, 1);
   directional_up.position.set(0, -1, 0);
   
   scene.add(ambient, directional_up, directional_down);
