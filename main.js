@@ -2,7 +2,7 @@ import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 //import * as P5 from "https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js";
 import { getNoiseValue } from './modules/noise';
-
+import { returnValue } from './modules/caves';
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -22,6 +22,8 @@ const grid = new THREE.Group();
 const cubeSize = 1;
 const size = 100;
 const gap = 0.01;
+
+var cutoff = 0.3;
 
 const geometry = new THREE.BoxGeometry(
   cubeSize,
@@ -54,12 +56,14 @@ function updateTerrain(){
   for (let x = 0; x < size; x++) {
     for (let y = 0; y < size; y++) {
       for (let z = 0; z < size; z++) {
-        const val = getNoiseValue(x, y, z);
-        if(val > 0.3){
+        const val = returnValue(x, y, z);
+        if(val > cutoff){
           cube.position.set(x, y, z);
           cube.updateMatrix();
           cubes_instance.setMatrixAt(i, cube.matrix);
         }else{
+          //not a clean solution to hide the cubes, didn't find a way to hide them completely though
+          //we could also create a new instance mesh every new generation and this would not be needed.
           cube.position.set(0, 0, 0);
           cube.updateMatrix();
           cubes_instance.setMatrixAt(i, cube.matrix);
@@ -77,7 +81,7 @@ updateTerrain();
   const ambient = new THREE.AmbientLight(0x404040);
   const directional_up = new THREE.DirectionalLight(0x404040, 1);
   const directional_down = new THREE.DirectionalLight(0x404040, 1);
-  directional_up.position.set(0, -1, 0);
+  directional_down.position.set(0, -1, 0);
   
   scene.add(ambient, directional_up, directional_down);
 
@@ -86,6 +90,9 @@ updateTerrain();
 var update_flag = true;
 function setUpdateFlag(bool){
   update_flag = bool;
+}
+function updateCutoff(cut){
+  cutoff = cut;
 }
 
 function animate() {
@@ -101,4 +108,4 @@ animate();
 
 
 //exporting for use in other scripts
-export {updateTerrain, setUpdateFlag};
+export {updateTerrain, setUpdateFlag, size, updateCutoff};
