@@ -57,6 +57,11 @@ function fade(t) {
     return t*t*t*(t*(t*6.0-15.0)+10.0); 
 };
 
+//linear interpolate
+function lerp(a, b, t) {
+  return (1-t)*a + t*b;
+}
+
 
 
 var noiseOffset = 10;
@@ -82,67 +87,38 @@ function updateNoiseOffset(noise_offset) {
   noiseOffset = noise_offset;
 }
 
-  // Classic Perlin noise, 3D version 
-function perlin3(x, y, z) { 
-    // Find unit grid cell containing point 
-    var X = Math.floor(x); 
-    var Y = Math.floor(y); 
-    var Z = Math.floor(z); 
+function perlin3 (x, y, z) {
+  // Find unit grid cell containing point
+  var X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z);
+  // Get relative xyz coordinates of point within that cell
+  x = x - X; y = y - Y; z = z - Z;
+  // Wrap the integer cells at 255 (smaller integer period can be introduced here)
+  X = X & 255; Y = Y & 255; Z = Z & 255;
 
-    // Get relative xyz coordinates of point within that cell 
-    x = x - X; 
-    y = y - Y; 
-    z = z - Z; 
+  // Calculate noise contributions from each of the eight corners
+  var n000 = gradP[X+  perm[Y+  perm[Z  ]]].dot3(x,   y,     z);
+  var n001 = gradP[X+  perm[Y+  perm[Z+1]]].dot3(x,   y,   z-1);
+  var n010 = gradP[X+  perm[Y+1+perm[Z  ]]].dot3(x,   y-1,   z);
+  var n011 = gradP[X+  perm[Y+1+perm[Z+1]]].dot3(x,   y-1, z-1);
+  var n100 = gradP[X+1+perm[Y+  perm[Z  ]]].dot3(x-1,   y,   z);
+  var n101 = gradP[X+1+perm[Y+  perm[Z+1]]].dot3(x-1,   y, z-1);
+  var n110 = gradP[X+1+perm[Y+1+perm[Z  ]]].dot3(x-1, y-1,   z);
+  var n111 = gradP[X+1+perm[Y+1+perm[Z+1]]].dot3(x-1, y-1, z-1);
 
-    // Wrap the integer cells at 255 (smaller integer period can be introduced here) 
-    X = X & 255; 
-    Y = Y & 255; 
-    Z = Z & 255;
+  // Compute the fade curve value for x, y, z
+  var u = fade(x);
+  var v = fade(y);
+  var w = fade(z);
 
-    // Calculate a set of eight hashed gradient indices 
-    var gi000 = perm[X+perm[Y+perm[Z]]] % 12; 
-    var gi001 = perm[X+perm[Y+perm[Z+1]]] % 12; 
-    var gi010 = perm[X+perm[Y+1+perm[Z]]] % 12; 
-    var gi011 = perm[X+perm[Y+1+perm[Z+1]]] % 12; 
-    var gi100 = perm[X+1+perm[Y+perm[Z]]] % 12; 
-    var gi101 = perm[X+1+perm[Y+perm[Z+1]]] % 12; 
-    var gi110 = perm[X+1+perm[Y+1+perm[Z]]] % 12; 
-    var gi111 = perm[X+1+perm[Y+1+perm[Z+1]]] % 12; 
-
-    // The gradients of each corner are now: 
-    // g000 = grad3[gi000]; 
-    // g001 = grad3[gi001]; 
-    // g010 = grad3[gi010]; 
-    // g011 = grad3[gi011]; 
-    // g100 = grad3[gi100]; 
-    // g101 = grad3[gi101]; 
-    // g110 = grad3[gi110]; 
-    // g111 = grad3[gi111]; 
-    // Calculate noise contributions from each of the eight corners 
-    var n000= grad3[gi000].dot3(x, y, z); 
-    var n100= grad3[gi100].dot3( x-1, y, z); 
-    var n010= grad3[gi010].dot3( x, y-1, z); 
-    var n110= grad3[gi110].dot3( x-1, y-1, z); 
-    var n001= grad3[gi001].dot3( x, y, z-1); 
-    var n101= grad3[gi101].dot3( x-1, y, z-1); 
-    var n011= grad3[gi011].dot3( x, y-1, z-1); 
-    var n111= grad3[gi111].dot3( x-1, y-1, z-1); 
-    // Compute the fade curve value for each of x, y, z 
-    var u = fade(x); 
-    var v = fade(y); 
-    var w = fade(z); 
-    // Interpolate along x the contributions from each of the corners 
-    var nx00 = mix(n000, n100, u); 
-    var nx01 = mix(n001, n101, u); 
-    var nx10 = mix(n010, n110, u); 
-    var nx11 = mix(n011, n111, u); 
-    // Interpolate the four results along y 
-    var nxy0 = mix(nx00, nx10, v); 
-    var nxy1 = mix(nx01, nx11, v); 
-    // Interpolate the two last results along z 
-    var nxyz = mix(nxy0, nxy1, w); 
-
-return nxyz; 
+  // Interpolate
+  return lerp(
+      lerp(
+        lerp(n000, n100, u),
+        lerp(n001, n101, u), w),
+      lerp(
+        lerp(n010, n110, u),
+        lerp(n011, n111, u), w),
+     v);
 };
 
 

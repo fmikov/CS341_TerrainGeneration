@@ -42,12 +42,12 @@ gui.add(settings, 'noise_offset', -2, 2).name('Noise offset').onChange(function(
       updateNoiseOffset(settings.noise_offset);
       setUpdateFlag(true);
   });;
-gui.add(settings, 'ampl', 0, 1).name('Amplitude').onChange(function(newValue) {
+gui.add(settings, 'ampl', 0, 5).name('Amplitude').onChange(function(newValue) {
   // Handle the updated value here
       updateAmplMultiplier(settings.ampl);
       setUpdateFlag(true);
   });;
-gui.add(settings, 'freq', 0, 1).name('Frequency').onChange(function(newValue) {
+gui.add(settings, 'freq', 0, 5).name('Frequency').onChange(function(newValue) {
 // Handle the updated value here
     updateFreqMultiplier(settings.freq);
     setUpdateFlag(true);
