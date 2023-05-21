@@ -20,7 +20,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const grid = new THREE.Group();
 
 const cubeSize = 1;
-const size = 80;
+const size = 100;
 const gap = 0.01;
 
 var cutoff = 0.3;
@@ -52,7 +52,7 @@ function updateTerrain() {
   for (let x = 0; x < size; x++) {
     for (let y = 0; y < size; y++) {
       for (let z = 0; z < size; z++) {
-        var biome = getBiome(getNoiseValue(x, y, z), size - y);
+        var biome = getBiome(getNoiseValue2d(x, z), size - y);
         const val = returnValue(x, y, z);
         if (val > cutoff) {
           cube.position.set(x, y, z);
