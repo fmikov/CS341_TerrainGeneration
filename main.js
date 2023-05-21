@@ -1,7 +1,7 @@
 import * as THREE from "https://unpkg.com/three@0.126.1/build/three.module.js";
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 //import * as P5 from "https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js";
-import { getNoiseValue } from "./modules/noise";
+import { getNoiseValue, getNoiseValue2d } from "./modules/noise";
 import { returnValue } from "./modules/caves";
 import { blocks, getBiome } from "./modules/biome";
 const renderer = new THREE.WebGLRenderer();
@@ -52,7 +52,7 @@ function updateTerrain() {
   for (let x = 0; x < size; x++) {
     for (let y = 0; y < size; y++) {
       for (let z = 0; z < size; z++) {
-        let biome = getBiome(getNoiseValue(x, y, z), size - y);
+        var biome = getBiome(getNoiseValue(x, y, z), size - y);
         const val = returnValue(x, y, z);
         if (val > cutoff) {
           cube.position.set(x, y, z);
@@ -61,6 +61,26 @@ function updateTerrain() {
         }
         cubes_instance.setColorAt(i, new THREE.Color(blocks[biome].color));
         cubes_instance.instanceMatrix.needsUpdate = true;
+
+        if (biome == "forest" && val > cutoff && y == size - 1) {
+          //tree generation
+          if (Math.random() < 0.05) {
+            const tree_height = 2;
+            const tree = new THREE.Group();
+            const trunk = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.2, 0.2, tree_height, 5),
+              new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+            );
+            const leaves = new THREE.Mesh(
+              new THREE.SphereGeometry(1, 8, 8),
+              new THREE.MeshPhongMaterial({ color: 0x00ff00 })
+            );
+            leaves.position.set(0, tree_height, 0);
+            tree.add(trunk, leaves);
+            tree.position.set(x, y + tree_height, z);
+            cubes_instance.add(tree);
+          }
+        }
         i++;
       }
     }
