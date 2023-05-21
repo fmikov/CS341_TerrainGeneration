@@ -92,6 +92,8 @@ function returnValue(x, y, z){
     //return gradient(y);
     //return gradient(y) * turbulence(x, y, z);
     //return fbm3(x, y, z);
+    //return overhangs(x,y,z);
+    return regularNoise(x,y,z);
     return Math.abs(turbulence(x,y,z));
     var temp = translateDomain(x, y, z, 0.8*turbulence(x, y, z));
     return regularNoise(temp.x, temp.y, temp.z);
@@ -108,6 +110,7 @@ function overhangs(x, y, z){
     var temp = translateDomain(x, y, z, 0.5*fbm3(t.x, t.z, 1));
     return gradient(y + temp.y);
 }
+//maybe height bias, density (perlin3d output) decreased at higher levels, increased at lower.
 
 
 export{returnValue, updateAmplMultiplier, updateNumOctaves, updateFreqMultiplier}
