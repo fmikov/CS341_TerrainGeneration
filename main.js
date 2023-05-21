@@ -1,9 +1,9 @@
-import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
+import * as THREE from "https://unpkg.com/three@0.126.1/build/three.module.js";
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 //import * as P5 from "https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js";
-import { getNoiseValue } from './modules/noise';
-import { returnValue } from './modules/caves';
-
+import { getNoiseValue } from "./modules/noise";
+import { returnValue } from "./modules/caves";
+import { blocks, getBiome } from "./modules/biome";
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
@@ -20,17 +20,13 @@ const controls = new OrbitControls(camera, renderer.domElement);
 const grid = new THREE.Group();
 
 const cubeSize = 1;
-const size = 100;
+const size = 80;
 const gap = 0.01;
 
 var cutoff = 0.3;
 
-const geometry = new THREE.BoxGeometry(
-  cubeSize,
-  cubeSize,
-  cubeSize
-);
-const material = new THREE.MeshPhongMaterial({color: 0xaaaaaa});
+const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+const material = new THREE.MeshPhongMaterial({ color: 0xaaaaaa });
 const cubes_instance = new THREE.InstancedMesh(
   geometry,
   material,
@@ -51,23 +47,19 @@ grid.position.set(center, center, center);
 
 camera.position.z = size * 1.5;
 
-function updateTerrain(){
+function updateTerrain() {
   let i = 0;
   for (let x = 0; x < size; x++) {
     for (let y = 0; y < size; y++) {
       for (let z = 0; z < size; z++) {
+        let biome = getBiome(getNoiseValue(x, y, z), size - y);
         const val = returnValue(x, y, z);
-        if(val > cutoff){
+        if (val > cutoff) {
           cube.position.set(x, y, z);
           cube.updateMatrix();
           cubes_instance.setMatrixAt(i, cube.matrix);
-        }else{
-          //not a clean solution to hide the cubes, didn't find a way to hide them completely though
-          //we could also create a new instance mesh every new generation and this would not be needed.
-          cube.position.set(0, 0, 0);
-          cube.updateMatrix();
-          cubes_instance.setMatrixAt(i, cube.matrix);
         }
+        cubes_instance.setColorAt(i, new THREE.Color(blocks[biome].color));
         cubes_instance.instanceMatrix.needsUpdate = true;
         i++;
       }
@@ -76,36 +68,32 @@ function updateTerrain(){
 }
 updateTerrain();
 
+//lighting
+const ambient = new THREE.AmbientLight(0x404040);
+const directional_up = new THREE.DirectionalLight(0x404040, 1);
+const directional_down = new THREE.DirectionalLight(0x404040, 1);
+directional_down.position.set(0, -1, 0);
 
-  //lighting
-  const ambient = new THREE.AmbientLight(0x404040);
-  const directional_up = new THREE.DirectionalLight(0x404040, 1);
-  const directional_down = new THREE.DirectionalLight(0x404040, 1);
-  directional_down.position.set(0, -1, 0);
-  
-  scene.add(ambient, directional_up, directional_down);
-
-
+scene.add(ambient, directional_up, directional_down);
 
 var update_flag = true;
-function setUpdateFlag(bool){
+function setUpdateFlag(bool) {
   update_flag = bool;
 }
-function updateCutoff(cut){
+function updateCutoff(cut) {
   cutoff = cut;
 }
 
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
-  if(update_flag){
+  if (update_flag) {
     updateTerrain();
     update_flag = false;
   }
   renderer.render(scene, camera);
-};
+}
 animate();
 
-
 //exporting for use in other scripts
-export {updateTerrain, setUpdateFlag, size, updateCutoff};
+export { updateTerrain, setUpdateFlag, size, updateCutoff };
