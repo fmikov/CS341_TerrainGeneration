@@ -1,5 +1,5 @@
 import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
-import { size } from '../main';
+import { height, size } from '../main';
 
 const r = Math;
 
@@ -19,8 +19,8 @@ var grad3 = [new Grad(1,1,0),new Grad(-1,1,0),new Grad(1,-1,0),new Grad(-1,-1,0)
               new Grad(1,0,1),new Grad(-1,0,1),new Grad(1,0,-1),new Grad(-1,0,-1),
               new Grad(0,1,1),new Grad(0,-1,1),new Grad(0,1,-1),new Grad(0,-1,-1)];
   
-//constant for now, for testing
-var p = [151,160,137,91,90,15,
+//constant for now, for testinga
+const p = [151,160,137,91,90,15,
   131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
   190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
   88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -62,53 +62,18 @@ function lerp(a, b, t) {
   return (1-t)*a + t*b;
 }
 
-//any number of points, assumes first half of arguments are x axis, the rest their corresponding y axis points.
-function createLinearInterpolator(...points) {
-  // Sort the points based on the x-coordinate
-  points.sort((a, b) => a[0] - b[0]);
-
-  return function(x) {
-    // Find the interval in which x falls
-    let i = 0;
-    while (i < points.length && x > points[i][0]) {
-      i++;
-    }
-
-    // Handle boundary cases
-    if (i === 0) {
-      return points[0][1];
-    }
-    if (i === points.length) {
-      return points[points.length - 1][1];
-    }
-
-    // Perform linear interpolation
-    const [x0, y0] = points[i - 1];
-    const [x1, y1] = points[i];
-    const t = (x - x0) / (x1 - x0);
-    return y0 + t * (y1 - y0);
-  };
-}
-
-
-
 var noiseOffset = 10;
 var noiseScale = 0.05;
 
-// Skewing and unskewing factors for 2, 3, and 4 dimensions
-var F2 = 0.5*(Math.sqrt(3)-1);
-var G2 = (3-Math.sqrt(3))/6;
+// Skewing and unskewing factors for 2, 3 dimensions
+const F2 = 0.5*(Math.sqrt(3)-1);
+const G2 = (3-Math.sqrt(3))/6;
 
-var F3 = 1/3;
-var G3 = 1/6;
-
-function getNoiseValue(x, y, z) {
-    return simplex3(x, y, z, noiseScale, noiseOffset);
-  }
-
+const F3 = 1/3;
+const G3 = 1/6;
 
 function applyScaleAndOffset(x,y,z, scale, offset){
-  return [x * noiseScale + noiseOffset, y * noiseScale + noiseOffset, z * noiseScale + noiseOffset];
+  return [x * scale + offset, y * scale + offset, z * scale + offset];
 }
 
   //function perlin3 (x, y, z, scale=0.5,)
@@ -148,8 +113,7 @@ function perlin3 (xi, yi, zi, scale = 0.5, offset = 0.0) {
      v);
 };
 
-
-function simplex2(xi, yi, scale, offset) {
+function simplex2(xi, yi, scale=0.0, offset=0.0) {
   var xin,yin,zin;
   [xin,yin,zin] = applyScaleAndOffset(xi,yi,yi, scale, offset);
   var n0, n1, n2; // Noise contributions from the three corners
@@ -297,8 +261,31 @@ function simplex3(xi, yi, zi, scale, offset) {
 
 };
 
+function perlin2(xi, yi, scale = 0.5, offset = 0.0) {
+  var x,y,z;
+  [x,y,z] = applyScaleAndOffset(xi,yi,yi, scale, offset);
+  // Find unit grid cell containing point
+  var X = Math.floor(x), Y = Math.floor(y);
+  // Get relative xy coordinates of point within that cell
+  x = x - X; y = y - Y;
+  // Wrap the integer cells at 255 (smaller integer period can be introduced here)
+  X = X & 255; Y = Y & 255;
 
+  // Calculate noise contributions from each of the four corners
+  var n00 = gradP[X+perm[Y]].dot2(x, y);
+  var n01 = gradP[X+perm[Y+1]].dot2(x, y-1);
+  var n10 = gradP[X+1+perm[Y]].dot2(x-1, y);
+  var n11 = gradP[X+1+perm[Y+1]].dot2(x-1, y-1);
 
+  // Compute the fade curve value for x
+  var u = fade(x);
+
+  // Interpolate the four results
+  return lerp(
+      lerp(n00, n10, u),
+      lerp(n01, n11, u),
+     fade(y));
+};
 
 
 //functions for controls
@@ -308,52 +295,4 @@ function updateNoiseScale(noise_scale) {
 function updateNoiseOffset(noise_offset) {
   noiseOffset = noise_offset;
 }
-export {updateNoiseScale, getNoiseValue, updateNoiseOffset};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//thisis from lecture slides:
-// public final class ImprovedNoise {
-//     static public double noise(double x, double y, double z) {
-//        int X = (int)Math.floor(x) & 255,                  // FIND UNIT CUBE THAT
-//            Y = (int)Math.floor(y) & 255,                  // CONTAINS POINT.
-//            Z = (int)Math.floor(z) & 255;
-//        x -= Math.floor(x);                                // FIND RELATIVE X,Y,Z
-//        y -= Math.floor(y);                                // OF POINT IN CUBE.
-//        z -= Math.floor(z);
-//        double u = fade(x),                                // COMPUTE FADE CURVES
-//               v = fade(y),                                // FOR EACH OF X,Y,Z.
-//               w = fade(z);
-//        int A = p[X  ]+Y, AA_ = p[A]+Z, AB_ = p[A+1]+Z,      // HASH COORDINATES OF
-//            B = p[X+1]+Y, BA_ = p[B]+Z, BB_ = p[B+1]+Z;      // THE 8 CUBE CORNERS,
- 
-//        return lerp(w, lerp(v, lerp(u, grad(p[AA_  ], x  , y  , z   ),  // AND ADD
-//                                       grad(p[BA_  ], x-1, y  , z   )), // BLENDED
-//                               lerp(u, grad(p[AB_  ], x  , y-1, z   ),  // RESULTS
-//                                       grad(p[BB_  ], x-1, y-1, z   ))),// FROM  8
-//                       lerp(v, lerp(u, grad(p[AA_+1], x  , y  , z-1 ),  // CORNERS
-//                                       grad(p[BA_+1], x-1, y  , z-1 )), // OF CUBE
-//                               lerp(u, grad(p[AB_+1], x  , y-1, z-1 ),
-//                                       grad(p[BB_+1], x-1, y-1, z-1 ))));
-//     }
-//     static double fade(double t) { return t * t * t * (t * (t * 6 - 15) + 10); }
-//     static double lerp(double t, double a, double b) { return a + t * (b - a); }
-//     static double grad(int hash, double x, double y, double z) {
-//        int h = hash & 15;                      // CONVERT LO 4 BITS OF HASH CODE_
-//        double u = h<8 ? x : y,                 // INTO 12 GRADIENT DIRECTIONS.
-//               v = h<4 ? y : h==12||h==14 ? x : z;
-//        return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
-//     }
-// }
+export {updateNoiseScale, updateNoiseOffset, perlin3, perlin2, simplex3, simplex2};

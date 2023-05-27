@@ -1,6 +1,6 @@
 import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
-import { size } from '../main';
-import { getNoiseValue } from './noise';
+import { height, size, width } from '../main';
+import { simplex3, perlin3, simplex2, perlin2 } from './noise';
 
 /**
  * This file returns the final noise value to main.js in the returnValue function 
@@ -11,9 +11,9 @@ import { getNoiseValue } from './noise';
 
 
 // Constants for FBM
-var freq_multiplier = 0.17;
+var freq_multiplier = 0.87;
 var ampl_multiplier = 0.2;
-var num_octaves = 4;
+var num_octaves = 2;
 function updateFreqMultiplier(f){
     freq_multiplier = f;
 }
@@ -27,7 +27,7 @@ function updateNumOctaves(o){
 
 
 function gradient(y){
-    return (size-y)/size;
+    return (height-y)/height;
 }
 
 function translateDomainXYZ(x, y, z, offsetX, offsetY, offsetZ) {
@@ -39,65 +39,161 @@ function translateDomainXYZ(x, y, z, offsetX, offsetY, offsetZ) {
   }
 
 function translateDomain(x, y, z, s){
-    var sc = s*size;
-    return new THREE.Vector3(x+sc, y+sc, z+sc);
+    const sw = s*width;
+    const sh = s*height
+    return new THREE.Vector3(x+sw, y+sh, z+sw);
 }
 
-function turbulence(x, y, z) {
+function turbulence3(x, y, z) {
 	var turbulence = 0.0;
 
     //same implementation as the one we used in the textures exercice
     for (var i = 0; i < num_octaves; i++) {
-        const eval_point = new THREE.Vector2(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
-        const point = new THREE.Vector2(x, y);
+        const eval_point = new THREE.Vector3(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
+        const point = new THREE.Vector3(x, y, z);
         const result = eval_point.multiply(point);
         
-        turbulence += Math.pow(ampl_multiplier, i) * Math.abs(getNoiseValue(result.x, result.y, z));
+        turbulence += Math.pow(ampl_multiplier, i) * Math.abs(perlin3(result.x, result.y, result.z, 0.08));
     }
     return turbulence;
 }
-
 
 function fbm3(x, y, z) {
     var fbm = 0.0;
 
     for (var i = 0; i < num_octaves; i++) {
-        const eval_point = new THREE.Vector2(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
-        const point = new THREE.Vector2(x, y);
+        const eval_point = new THREE.Vector3(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
+        const point = new THREE.Vector3(x, y, z);
         const result = eval_point.multiply(point);
         
-        fbm += Math.pow(ampl_multiplier, i) * getNoiseValue(result.x, result.y, z);
+        fbm += Math.pow(ampl_multiplier, i) * perlin3(result.x, result.y, result.z, 0.08);
     }
     return fbm;
 }
 
-function fbm2(x, y, z) {
+function fbm2(x, y, scale, offset, freq_multiplier = 0.17, ampl_multiplier = 0.2, num_octaves = 4) {
     var fbm = 0.0;
-
     for (var i = 0; i < num_octaves; i++) {
         const eval_point = new THREE.Vector2(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
         const point = new THREE.Vector2(x, y);
         const result = eval_point.multiply(point);
         
-        fbm += Math.pow(ampl_multiplier, i) * getNoiseValue(result.x, result.y);
+        fbm += Math.pow(ampl_multiplier, i) * simplex2(result.x, result.y, scale, offset);
+    }
+    return fbm;
+  }
+  
+function turbulence2(x, y, scale, offset, freq_multiplier = 0.17, ampl_multiplier = 0.2, num_octaves = 4) {
+    var fbm = 0.0;
+    for (var i = 0; i < num_octaves; i++) {
+        const eval_point = new THREE.Vector2(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
+        const point = new THREE.Vector2(x, y);
+        const result = eval_point.multiply(point);
+        
+        fbm += Math.pow(ampl_multiplier, i) * Math.abs(simplex2(result.x, result.y, scale, offset));
     }
     return fbm;
 }
 
-function regularNoise(x, y, z){
-    return getNoiseValue(x, y, z);
+//any number of points, assumes first half of arguments are x axis, the rest their corresponding y axis points.
+//use like this: createLinearInterpolator([1,1], [2,2], [3,3])
+function createLinearInterpolator(...points) {
+    // Sort the points based on the x-coordinate
+    points.sort((a, b) => a[0] - b[0]);
+  
+    return function(x) {
+      // Find the interval in which x falls
+      let i = 0;
+      while (i < points.length && x > points[i][0]) {
+        i++;
+      }
+  
+      // Handle boundary cases
+      if (i === 0) {
+        return points[0][1];
+      }
+      if (i === points.length) {
+        return points[points.length - 1][1];
+      }
+  
+      // Perform linear interpolation
+      const [x0, y0] = points[i - 1];
+      const [x1, y1] = points[i];
+      const t = (x - x0) / (x1 - x0);
+      return y0 + t * (y1 - y0);
+    };
+  }
+
+function lerp(a, b, t) {
+    return a * (1 - t) + b * t;
 }
 
+const continentalness = createLinearInterpolator([0.1, 1], [0.37, 0.1], [0.4, 0.1], [0.41, 0.4], [0.53, 0.5], [0.55, 0.8], [0.7, 0.9], [1, 1]);
+const erosion = createLinearInterpolator([0., 1], [0.15, 0.7], [0.29, 0.5], [0.33, 0.58], [0.45, 0.1], [0.8, 0.08], [0.82, 0.25], [0.9, 0.25], [0.91, 0.1]);
+const peaks = createLinearInterpolator([0., 0.], [0.1, 0.1], [0.35, 0.33], [0.5, 0.35], [0.7, 0.85], [0.8, 1], [1, 0.9]);
+
+
+
+function caveFalloff(y){
+    if(y > height/2) return 0.5;
+    if(y < height/2 && y > height/3) return gradient(y);
+    //(height-y)/height;
+    return 2.0/3.0;
+}
+
+function getTerrainAndCaves(x, y, z){
+    //first value is for caves, second for terrain?
+    //return [1, terrain(x,y,z)]
+    return [caves(x,y,z)*(1+caveFalloff(y)), terrain(x, y, z)+((caveFalloff(y)*(height/2)))];
+}
+
+function caves(x,y,z){
+    return 1;
+    return turbulence3(x,y,z) - perlin3(x,y,z, 0.03);
+}
+
+function terrain(x,y,z){
+    var c = (perlin2(x, z, 0.02, 0) + 1) / 2;
+    var e = (perlin2(x, z, 0.01, 0) + 1) / 2;
+    var p = (turbulence2(x, z, 0.015, 0) + 1) / 2;
+    
+    // Subtract erosion from peaks, ensuring the result is not negative
+    var adjustedPeaks = Math.max(0.03, peaks(p) - erosion(e));
+
+    const temp = Math.pow(continentalness(c), adjustedPeaks);
+    console.log(c, e, p, perlin2(x,z));
+    return Math.pow(continentalness(c), adjustedPeaks);
+  }
+
 function returnValue(x, y, z){
-    //return gradient(y);
-    //return gradient(y) * turbulence(x, y, z);
-    //return fbm3(x, y, z);
-    //return overhangs(x,y,z);
-    return regularNoise(x,y,z);
-    return Math.abs(turbulence(x,y,z));
-    var temp = translateDomain(x, y, z, 0.8*turbulence(x, y, z));
-    return regularNoise(temp.x, temp.y, temp.z);
-    return gradient(y + temp.y);
+    // let [caveValue, terrainValue] = getTerrainAndCaves(x, y, z);
+
+    // // Blend factor based on y-coordinate
+    // let blendFactor = Math.min(Math.max(y / height, 0), 1);
+
+    // // You could also use a noise function for the blend factor
+    // // blendFactor = (perlin3(x, y, z, 0.08) + 1) / 2;
+
+    // // Blend the terrain and cave values
+    // let resultValue = lerp(terrainValue, caveValue, blendFactor);
+
+
+    const terrainHeight = terrain(x, z); // This should be your 2D noise function
+    const caveNoiseValue = caves(x, y, z); // This should be your 3D noise function
+    
+    // Scale the terrain height to match the range you want (e.g., [0, 150]).
+    const scaledTerrainHeight = terrainHeight * height;
+
+    // Let's say you want caves to start forming when the caveNoiseValue is less than 0.4
+    const isCave = caveNoiseValue < 0.4 ? 1 : 0;
+
+    // Now, let's make a rule:
+    // If the current y is less than the scaledTerrainHeight, it should always be a solid block (value 1), 
+    // unless it's a cave (in which case it's 0). 
+    // If the current y is above the terrain height, it's an air block (value 0).
+    const blockValue = y <= scaledTerrainHeight ? (1 - isCave) : 0;
+
+    return blockValue;
 }
 
 
