@@ -141,6 +141,10 @@ function caveFalloff(y){
     return 2.0/3.0;
 }
 
+function clampDensity(value) {
+    return Math.max(0, Math.min(1, value));
+}
+
 function getTerrainAndCaves(x, y, z){
     //first value is for caves, second for terrain?
     //return [1, terrain(x,y,z)]
@@ -148,7 +152,7 @@ function getTerrainAndCaves(x, y, z){
 }
 
 function caves(x,y,z){
-    return 1;
+    //return 1;
     return turbulence3(x,y,z) - perlin3(x,y,z, 0.03);
 }
 
@@ -158,11 +162,9 @@ function terrain(x,y,z){
     var p = (turbulence2(x, z, 0.015, 0) + 1) / 2;
     
     // Subtract erosion from peaks, ensuring the result is not negative
-    var adjustedPeaks = Math.max(0.03, peaks(p) - erosion(e));
+    var adjustedPeaks = Math.max(0.01, peaks(p) - erosion(e));
 
-    const temp = Math.pow(continentalness(c), adjustedPeaks);
-    console.log(c, e, p, perlin2(x,z));
-    return Math.pow(continentalness(c), adjustedPeaks);
+    return Math.pow(height*continentalness(c), adjustedPeaks);
   }
 
 function returnValue(x, y, z){
@@ -177,8 +179,14 @@ function returnValue(x, y, z){
     // // Blend the terrain and cave values
     // let resultValue = lerp(terrainValue, caveValue, blendFactor);
 
+    var t = getTerrainAndCaves(x,y,z);
+    if(y < t[1]+((caveFalloff(y)*(height/2))) && t[0]*(1+caveFalloff(y)) > 0.3){
+        return 1;
+    }
+    return 0;
 
-    const terrainHeight = terrain(x, z); // This should be your 2D noise function
+
+    const terrainHeight = terrain(x, y, z); // This should be your 2D noise function
     const caveNoiseValue = caves(x, y, z); // This should be your 3D noise function
     
     // Scale the terrain height to match the range you want (e.g., [0, 150]).
@@ -191,9 +199,9 @@ function returnValue(x, y, z){
     // If the current y is less than the scaledTerrainHeight, it should always be a solid block (value 1), 
     // unless it's a cave (in which case it's 0). 
     // If the current y is above the terrain height, it's an air block (value 0).
-    const blockValue = y <= scaledTerrainHeight ? (1 - isCave) : 0;
-
-    return blockValue;
+    var blockValue = y <= scaledTerrainHeight ? (1 - isCave) : 0;
+    var squash = (terrainHeight - y) * terrainHeight*0.9;
+    return caveNoiseValue +squash;
 }
 
 

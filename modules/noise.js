@@ -76,7 +76,7 @@ function applyScaleAndOffset(x,y,z, scale, offset){
   return [x * scale + offset, y * scale + offset, z * scale + offset];
 }
 
-  //function perlin3 (x, y, z, scale=0.5,)
+  //function pperlin3 (x, y, z, scale=0.5,)
 function perlin3 (xi, yi, zi, scale = 0.5, offset = 0.0) {
   var x,y,z;
   [x,y,z] = applyScaleAndOffset(xi,yi,zi, scale, offset)

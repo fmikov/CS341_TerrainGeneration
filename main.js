@@ -21,11 +21,11 @@ const grid = new THREE.Group();
 
 const cubeSize = 1;
 const size =100;
-const height = 15;
-const width = 15;
+const height = 100;
+const width = 80;
 const gap = 0.01;
 
-var cutoff = 0.3;
+var cutoff = 0.5;
 
 const geometry = new THREE.BoxGeometry(
   cubeSize,
@@ -60,7 +60,7 @@ function updateTerrain(){
       for (let z = 0; z < width; z++) {
         const v = returnValue(x, y, z);
         //console.log(val + " " + y);
-        if(v>=0.98){
+        if(v>= cutoff){
         //if(height >y && density > cutoff*(y/height)){
           cube.position.set(x, y, z);
           cube.updateMatrix();
@@ -112,42 +112,48 @@ var rightTerrains = 0; // represented as 1
 var upTerrains = 0; // represented as 2
 var downTerrains = 0; // represented as 3
 
-
 function generateExtraTerrain(direction){
   var xs = 0;
   var zs = 0;
   var xe = 0;
   var ze = 0;
+
+  var chunks = 0;
   switch (direction) {
     case 0 : 
       leftTerrains+=1;
       xs = -width*leftTerrains;
-      zs = 0;
+      zs = -width*downTerrains;
       xe = -width*(leftTerrains-1);
-      ze = width;
+      ze = width*(upTerrains+1);
+      chunks = downTerrains + upTerrains + 1;
     break;
     case 1 :
       rightTerrains+=1;
       xs = width*rightTerrains;
-      zs = 0;
+      zs = -width*downTerrains;
       xe = width*(rightTerrains+1);
-      ze = width;
+      ze = width*(upTerrains+1);
+      chunks = downTerrains + upTerrains + 1;
     break;
     case 2 :
       upTerrains+=1
-      xs = 0;
+      xs = -width*leftTerrains;
       zs = width*upTerrains;
-      xe = width
+      xe = width*(rightTerrains+1);
       ze = width*(upTerrains+1);
+      chunks = rightTerrains + leftTerrains + 1;
     break;
     case 3 :
       downTerrains+=1;
-      xs = 0;
+      xs = -width*leftTerrains;
       zs = -width*downTerrains;
-      xe = width;
+      xe = width*(rightTerrains+1);
       ze = -width*(downTerrains-1);
+      chunks = rightTerrains + leftTerrains + 1
     break;
   }
+
   const geometry = new THREE.BoxGeometry(
     cubeSize,
     cubeSize,
@@ -157,7 +163,7 @@ function generateExtraTerrain(direction){
   const cubes_instance = new THREE.InstancedMesh(
     geometry,
     material,
-    Math.pow(width, 2)*height
+    Math.pow(width, 2)*height*chunks
   );
   //cubes_instance.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   
@@ -179,9 +185,9 @@ function generateExtraTerrain(direction){
     for (let x = xs; x < xe; x++) {
       for (let y = 0; y < height; y++) {
         for (let z = zs; z < ze; z++) {
-          const [density, height] = returnValue(x, y, z);
-          //console.log(val + " " + y);
-          if(height >y && density > cutoff*(y/height)){
+          const v = returnValue(x, y, z);
+          if(v>= cutoff){
+          //if(height >y && density > cutoff*(y/height)){
             cube.position.set(x, y, z);
             cube.updateMatrix();
             cubes_instance.setMatrixAt(i, cube.matrix);

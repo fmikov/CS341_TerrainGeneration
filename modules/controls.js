@@ -12,13 +12,13 @@ var settings = {
     octaves: 4
   };
 //setting initial values
-updateCutoff(settings.cutoff);
-updateNoiseScale(settings.noise_scale);
-updateNoiseOffset(settings.noise_offset);
-updateAmplMultiplier(settings.ampl);
-updateFreqMultiplier(settings.freq);
-updateNumOctaves(settings.octaves);
-setUpdateFlag(true);
+// updateCutoff(settings.cutoff);
+// updateNoiseScale(settings.noise_scale);
+// updateNoiseOffset(settings.noise_offset);
+// updateAmplMultiplier(settings.ampl);
+// updateFreqMultiplier(settings.freq);
+// updateNumOctaves(settings.octaves);
+// setUpdateFlag(true);
 
 // Create the GUI
 var gui = new dat.GUI();
