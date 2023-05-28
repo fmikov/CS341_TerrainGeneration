@@ -36,42 +36,60 @@ const p = [151,160,137,91,90,15,
 // To remove the need for index wrapping, double the permutation table length 
 var perm = new Array(512); 
 var gradP = new Array(512);
-for(var i=0; i<512; i++) {
-    perm[i]=p[i & 255];
-    gradP[i] = gradP[i + 256] = grad3[perm[i] % 12];
+for (var i = 0; i < 512; i++) {
+  perm[i] = p[i & 255];
+  gradP[i] = gradP[i + 256] = grad3[perm[i] % 12];
 }
 
-function dot(g, x, y, z) { 
-    return g[0]*x + g[1]*y + g[2]*z; 
-};
+function dot(g, x, y, z) {
+  return g[0] * x + g[1] * y + g[2] * z;
+}
 
 function dot2(g, x, y) {
-  return g[0]*x + g[1]*y;
+  return g[0] * x + g[1] * y;
 }
 
-function mix(a, b, t) { 
-    return (1.0-t)*a + t*b; 
-};
+function mix(a, b, t) {
+  return (1.0 - t) * a + t * b;
+}
 
-function fade(t) { 
-    return t*t*t*(t*(t*6.0-15.0)+10.0); 
-};
+function fade(t) {
+  return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
 
 //linear interpolate
 function lerp(a, b, t) {
-  return (1-t)*a + t*b;
+  return (1 - t) * a + t * b;
 }
 
 var noiseOffset = 10;
 var noiseScale = 0.05;
 
-// Skewing and unskewing factors for 2, 3 dimensions
-const F2 = 0.5*(Math.sqrt(3)-1);
-const G2 = (3-Math.sqrt(3))/6;
+// Skewing and unskewing factors for 2, 3, and 4 dimensions
+var F2 = 0.5 * (Math.sqrt(3) - 1);
+var G2 = (3 - Math.sqrt(3)) / 6;
 
-const F3 = 1/3;
-const G3 = 1/6;
+var F3 = 1 / 3;
+var G3 = 1 / 6;
 
+function getNoiseValue(x, y, z) {
+  x = x * noiseScale + noiseOffset;
+  z = z * noiseScale + noiseOffset;
+  y = y * noiseScale + noiseOffset;
+  return perlin3(x, y, z);
+}
+
+function getNoiseValue2d(x, y) {
+  x = x * noiseScale + noiseOffset;
+  y = y * noiseScale + noiseOffset;
+  return perlin2(x, y);
+}
+
+function updateNoiseScale(noise_scale) {
+  noiseScale = noise_scale;
+}
+function updateNoiseOffset(noise_offset) {
+  noiseOffset = noise_offset;
 function applyScaleAndOffset(x,y,z, scale, offset){
   return [x * scale + offset, y * scale + offset, z * scale + offset];
 }
@@ -296,3 +314,37 @@ function updateNoiseOffset(noise_offset) {
   noiseOffset = noise_offset;
 }
 export {updateNoiseScale, updateNoiseOffset, perlin3, perlin2, simplex3, simplex2};
+
+//thisis from lecture slides:
+// public final class ImprovedNoise {
+//     static public double noise(double x, double y, double z) {
+//        int X = (int)Math.floor(x) & 255,                  // FIND UNIT CUBE THAT
+//            Y = (int)Math.floor(y) & 255,                  // CONTAINS POINT.
+//            Z = (int)Math.floor(z) & 255;
+//        x -= Math.floor(x);                                // FIND RELATIVE X,Y,Z
+//        y -= Math.floor(y);                                // OF POINT IN CUBE.
+//        z -= Math.floor(z);
+//        double u = fade(x),                                // COMPUTE FADE CURVES
+//               v = fade(y),                                // FOR EACH OF X,Y,Z.
+//               w = fade(z);
+//        int A = p[X  ]+Y, AA_ = p[A]+Z, AB_ = p[A+1]+Z,      // HASH COORDINATES OF
+//            B = p[X+1]+Y, BA_ = p[B]+Z, BB_ = p[B+1]+Z;      // THE 8 CUBE CORNERS,
+ 
+//        return lerp(w, lerp(v, lerp(u, grad(p[AA_  ], x  , y  , z   ),  // AND ADD
+//                                       grad(p[BA_  ], x-1, y  , z   )), // BLENDED
+//                               lerp(u, grad(p[AB_  ], x  , y-1, z   ),  // RESULTS
+//                                       grad(p[BB_  ], x-1, y-1, z   ))),// FROM  8
+//                       lerp(v, lerp(u, grad(p[AA_+1], x  , y  , z-1 ),  // CORNERS
+//                                       grad(p[BA_+1], x-1, y  , z-1 )), // OF CUBE
+//                               lerp(u, grad(p[AB_+1], x  , y-1, z-1 ),
+//                                       grad(p[BB_+1], x-1, y-1, z-1 ))));
+//     }
+//     static double fade(double t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+//     static double lerp(double t, double a, double b) { return a + t * (b - a); }
+//     static double grad(int hash, double x, double y, double z) {
+//        int h = hash & 15;                      // CONVERT LO 4 BITS OF HASH CODE_
+//        double u = h<8 ? x : y,                 // INTO 12 GRADIENT DIRECTIONS.
+//               v = h<4 ? y : h==12||h==14 ? x : z;
+//        return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
+//     }
+// }
