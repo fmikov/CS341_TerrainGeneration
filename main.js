@@ -1,8 +1,8 @@
 import * as THREE from "https://unpkg.com/three@0.126.1/build/three.module.js";
 import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
 //import * as P5 from "https://cdn.jsdelivr.net/npm/p5@1.6.0/lib/p5.js";
-import { getNoiseValue, getNoiseValue2d } from "./modules/noise";
-import { returnValue } from "./modules/caves";
+import { getNoiseValue2d, perlin2 } from "./modules/noise";
+import { returnValue, fbm2 } from "./modules/caves";
 import { blocks, getBiome } from "./modules/biome";
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -22,7 +22,7 @@ const grid = new THREE.Group();
 const cubeSize = 1;
 const size =100;
 const height = 100;
-const width = 80;
+const width = 20;
 const gap = 0.01;
 
 var cutoff = 0.5;
@@ -58,14 +58,7 @@ function updateTerrain() {
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
       for (let z = 0; z < width; z++) {
-        const v = returnValue(x, y, z);
-        //console.log(val + " " + y);
-        if(v>= cutoff){
-        //if(height >y && density > cutoff*(y/height)){
-  for (let x = 0; x < size; x++) {
-    for (let y = 0; y < size; y++) {
-      for (let z = 0; z < size; z++) {
-        var biome = getBiome(getNoiseValue2d(x, z), size - y);
+        var biome = biomeFromXYZ(x,y,z);
         const val = returnValue(x, y, z);
         if (val > cutoff) {
           cube.position.set(x, y, z);
@@ -75,7 +68,7 @@ function updateTerrain() {
         cubes_instance.setColorAt(i, new THREE.Color(blocks[biome].color));
         cubes_instance.instanceMatrix.needsUpdate = true;
 
-        if (biome == "forest" && val > cutoff && y == size - 1) {
+        if (biome == "forest" && val > cutoff && y == height - 1) {
           //tree generation
           if (Math.random() < 0.05) {
             const tree_height = 2;
@@ -99,6 +92,7 @@ function updateTerrain() {
     }
   }
 }
+
 updateTerrain();
 
 //lighting
@@ -117,6 +111,10 @@ function setUpdateFlag(bool) {
 }
 function updateCutoff(cut) {
   cutoff = cut;
+}
+
+function biomeFromXYZ(x,y,z){
+  return getBiome(getNoiseValue2d(x, z), y + 6*fbm2(x,z, 0.04, 0.0));
 }
 
 function animate() {
@@ -189,7 +187,7 @@ function generateExtraTerrain(direction){
   const cubes_instance = new THREE.InstancedMesh(
     geometry,
     material,
-    Math.pow(width, 2)*height*chunks
+    Math.pow(width, 2)*height*chunks*2
   );
   //cubes_instance.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
@@ -211,14 +209,35 @@ function generateExtraTerrain(direction){
     for (let x = xs; x < xe; x++) {
       for (let y = 0; y < height; y++) {
         for (let z = zs; z < ze; z++) {
-          const v = returnValue(x, y, z);
-          if(v>= cutoff){
-          //if(height >y && density > cutoff*(y/height)){
+          var biome = biomeFromXYZ(x,y,z);
+          const val = returnValue(x, y, z);
+          if (val > cutoff) {
             cube.position.set(x, y, z);
             cube.updateMatrix();
             cubes_instance.setMatrixAt(i, cube.matrix);
           }
+          cubes_instance.setColorAt(i, new THREE.Color(blocks[biome].color));
           cubes_instance.instanceMatrix.needsUpdate = true;
+
+          if (biome == "forest" && val > cutoff && y == height - 1) {
+            //tree generation
+            if (Math.random() < 0.05) {
+              const tree_height = 2;
+              const tree = new THREE.Group();
+              const trunk = new THREE.Mesh(
+                  new THREE.CylinderGeometry(0.2, 0.2, tree_height, 5),
+                  new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+              );
+              const leaves = new THREE.Mesh(
+                  new THREE.SphereGeometry(1, 8, 8),
+                  new THREE.MeshPhongMaterial({ color: 0x00ff00 })
+              );
+              leaves.position.set(0, tree_height, 0);
+              tree.add(trunk, leaves);
+              tree.position.set(x, y + tree_height, z);
+              cubes_instance.add(tree);
+            }
+          }
           i++;
         }
       }
@@ -256,4 +275,3 @@ document.addEventListener('keydown', function(event) {
 
 //exporting for use in other scripts
 export {updateTerrain, setUpdateFlag, size , width, height, updateCutoff};
-export { updateTerrain, setUpdateFlag, size, updateCutoff };

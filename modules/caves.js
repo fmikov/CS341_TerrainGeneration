@@ -217,4 +217,4 @@ function overhangs(x, y, z){
 //maybe height bias, density (perlin3d output) decreased at higher levels, increased at lower.
 
 
-export{returnValue, updateAmplMultiplier, updateNumOctaves, updateFreqMultiplier}
+export{returnValue, updateAmplMultiplier, updateNumOctaves, updateFreqMultiplier, fbm2}

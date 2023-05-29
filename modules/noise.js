@@ -34,9 +34,9 @@ const p = [151,160,137,91,90,15,
   49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
   138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
 // To remove the need for index wrapping, double the permutation table length 
-var perm = new Array(512); 
-var gradP = new Array(512);
-for (var i = 0; i < 512; i++) {
+let perm = new Array(512);
+let gradP = new Array(512);
+for (let i = 0; i < 512; i++) {
   perm[i] = p[i & 255];
   gradP[i] = gradP[i + 256] = grad3[perm[i] % 12];
 }
@@ -72,13 +72,6 @@ var G2 = (3 - Math.sqrt(3)) / 6;
 var F3 = 1 / 3;
 var G3 = 1 / 6;
 
-function getNoiseValue(x, y, z) {
-  x = x * noiseScale + noiseOffset;
-  z = z * noiseScale + noiseOffset;
-  y = y * noiseScale + noiseOffset;
-  return perlin3(x, y, z);
-}
-
 function getNoiseValue2d(x, y) {
   x = x * noiseScale + noiseOffset;
   y = y * noiseScale + noiseOffset;
@@ -90,6 +83,7 @@ function updateNoiseScale(noise_scale) {
 }
 function updateNoiseOffset(noise_offset) {
   noiseOffset = noise_offset;
+}
 function applyScaleAndOffset(x,y,z, scale, offset){
   return [x * scale + offset, y * scale + offset, z * scale + offset];
 }
@@ -306,45 +300,5 @@ function perlin2(xi, yi, scale = 0.5, offset = 0.0) {
 };
 
 
-//functions for controls
-function updateNoiseScale(noise_scale) {
-  noiseScale = noise_scale;
-}
-function updateNoiseOffset(noise_offset) {
-  noiseOffset = noise_offset;
-}
-export {updateNoiseScale, updateNoiseOffset, perlin3, perlin2, simplex3, simplex2};
+export {updateNoiseScale, updateNoiseOffset, perlin3, perlin2, simplex3, simplex2, getNoiseValue2d};
 
-//thisis from lecture slides:
-// public final class ImprovedNoise {
-//     static public double noise(double x, double y, double z) {
-//        int X = (int)Math.floor(x) & 255,                  // FIND UNIT CUBE THAT
-//            Y = (int)Math.floor(y) & 255,                  // CONTAINS POINT.
-//            Z = (int)Math.floor(z) & 255;
-//        x -= Math.floor(x);                                // FIND RELATIVE X,Y,Z
-//        y -= Math.floor(y);                                // OF POINT IN CUBE.
-//        z -= Math.floor(z);
-//        double u = fade(x),                                // COMPUTE FADE CURVES
-//               v = fade(y),                                // FOR EACH OF X,Y,Z.
-//               w = fade(z);
-//        int A = p[X  ]+Y, AA_ = p[A]+Z, AB_ = p[A+1]+Z,      // HASH COORDINATES OF
-//            B = p[X+1]+Y, BA_ = p[B]+Z, BB_ = p[B+1]+Z;      // THE 8 CUBE CORNERS,
- 
-//        return lerp(w, lerp(v, lerp(u, grad(p[AA_  ], x  , y  , z   ),  // AND ADD
-//                                       grad(p[BA_  ], x-1, y  , z   )), // BLENDED
-//                               lerp(u, grad(p[AB_  ], x  , y-1, z   ),  // RESULTS
-//                                       grad(p[BB_  ], x-1, y-1, z   ))),// FROM  8
-//                       lerp(v, lerp(u, grad(p[AA_+1], x  , y  , z-1 ),  // CORNERS
-//                                       grad(p[BA_+1], x-1, y  , z-1 )), // OF CUBE
-//                               lerp(u, grad(p[AB_+1], x  , y-1, z-1 ),
-//                                       grad(p[BB_+1], x-1, y-1, z-1 ))));
-//     }
-//     static double fade(double t) { return t * t * t * (t * (t * 6 - 15) + 10); }
-//     static double lerp(double t, double a, double b) { return a + t * (b - a); }
-//     static double grad(int hash, double x, double y, double z) {
-//        int h = hash & 15;                      // CONVERT LO 4 BITS OF HASH CODE_
-//        double u = h<8 ? x : y,                 // INTO 12 GRADIENT DIRECTIONS.
-//               v = h<4 ? y : h==12||h==14 ? x : z;
-//        return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
-//     }
-// }
