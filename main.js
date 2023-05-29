@@ -22,7 +22,7 @@ const grid = new THREE.Group();
 const cubeSize = 1;
 const size =100;
 const height = 100;
-const width = 20;
+const width = 100;
 const gap = 0.01;
 
 var cutoff = 0.5;
@@ -58,35 +58,19 @@ function updateTerrain() {
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
       for (let z = 0; z < width; z++) {
-        var biome = biomeFromXYZ(x,y,z);
+
         const val = returnValue(x, y, z);
         if (val > cutoff) {
           cube.position.set(x, y, z);
           cube.updateMatrix();
           cubes_instance.setMatrixAt(i, cube.matrix);
         }
+        var biome = biomeFromXYZ(x,y,z, val);
         cubes_instance.setColorAt(i, new THREE.Color(blocks[biome].color));
         cubes_instance.instanceMatrix.needsUpdate = true;
 
-        if (biome == "forest" && val > cutoff && y == height - 1) {
-          //tree generation
-          if (Math.random() < 0.05) {
-            const tree_height = 2;
-            const tree = new THREE.Group();
-            const trunk = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.2, 0.2, tree_height, 5),
-              new THREE.MeshPhongMaterial({ color: 0x8b4513 })
-            );
-            const leaves = new THREE.Mesh(
-              new THREE.SphereGeometry(1, 8, 8),
-              new THREE.MeshPhongMaterial({ color: 0x00ff00 })
-            );
-            leaves.position.set(0, tree_height, 0);
-            tree.add(trunk, leaves);
-            tree.position.set(x, y + tree_height, z);
-            cubes_instance.add(tree);
-          }
-        }
+
+
         i++;
       }
     }
@@ -100,8 +84,8 @@ const ambient = new THREE.AmbientLight(0x404040);
 const directional_up = new THREE.DirectionalLight(0x404040, 1);
 const directional_down = new THREE.DirectionalLight(0x404040, 1);
 directional_down.position.set(0, -1, 0);
-
-scene.add(ambient, directional_up, directional_down);
+const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 0.5 );
+scene.add(ambient, directional_up, directional_down, light);
 
 
 
@@ -113,12 +97,35 @@ function updateCutoff(cut) {
   cutoff = cut;
 }
 
-function biomeFromXYZ(x,y,z){
-  return getBiome(getNoiseValue2d(x, z), y + 6*fbm2(x,z, 0.04, 0.0));
+function biomeFromXYZ(x,y,z, val){
+  const biome = getBiome(x, y, z);
+  if (biome == "forest" && val > cutoff && y < 3 * height / 4-10 && y > 3 * height / 4-25) {
+    //tree generation
+    if (Math.random() < 0.005) {
+      const tree_height = 2;
+      const tree = new THREE.Group();
+      const trunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.2, 0.2, tree_height, 5),
+          new THREE.MeshPhongMaterial({ color: 0x8b4513 })
+      );
+      const leaves = new THREE.Mesh(
+          new THREE.SphereGeometry(1, 8, 8),
+          new THREE.MeshPhongMaterial({ color: 0x00ff00 })
+      );
+      leaves.position.set(0, tree_height, 0);
+      tree.add(trunk, leaves);
+      tree.position.set(x, y + tree_height, z);
+      cubes_instance.add(tree);
+    }
+  }
+  return biome;
 }
+
+
 
 function animate() {
   requestAnimationFrame(animate);
+
   controls.update();
   if (update_flag) {
     updateTerrain();
@@ -202,42 +209,23 @@ function generateExtraTerrain(direction){
 
   grid.position.set(center, center, center);
 
-  camera.position.z = width * 1.5;
+  //camera.position.z = width * 1.5;
 
   function updateTerrain(){
     let i = 0;
     for (let x = xs; x < xe; x++) {
       for (let y = 0; y < height; y++) {
         for (let z = zs; z < ze; z++) {
-          var biome = biomeFromXYZ(x,y,z);
           const val = returnValue(x, y, z);
           if (val > cutoff) {
             cube.position.set(x, y, z);
             cube.updateMatrix();
             cubes_instance.setMatrixAt(i, cube.matrix);
           }
+          var biome = biomeFromXYZ(x,y,z, val);
           cubes_instance.setColorAt(i, new THREE.Color(blocks[biome].color));
           cubes_instance.instanceMatrix.needsUpdate = true;
 
-          if (biome == "forest" && val > cutoff && y == height - 1) {
-            //tree generation
-            if (Math.random() < 0.05) {
-              const tree_height = 2;
-              const tree = new THREE.Group();
-              const trunk = new THREE.Mesh(
-                  new THREE.CylinderGeometry(0.2, 0.2, tree_height, 5),
-                  new THREE.MeshPhongMaterial({ color: 0x8b4513 })
-              );
-              const leaves = new THREE.Mesh(
-                  new THREE.SphereGeometry(1, 8, 8),
-                  new THREE.MeshPhongMaterial({ color: 0x00ff00 })
-              );
-              leaves.position.set(0, tree_height, 0);
-              tree.add(trunk, leaves);
-              tree.position.set(x, y + tree_height, z);
-              cubes_instance.add(tree);
-            }
-          }
           i++;
         }
       }

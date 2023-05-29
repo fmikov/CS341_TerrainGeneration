@@ -1,4 +1,6 @@
 import {height, width} from '../main'
+import {turbulence2, fbm2} from '../modules/caves'
+import {perlin2} from "./noise.js";
 
 var blocks = {
   desert: {
@@ -25,16 +27,24 @@ var blocks = {
   leaves: {
     color: 0x00ff00,
   },
+  water: {
+    color: 0x0029DF,
+  },
 };
 
-function getBiome(n, y) {
+function getBiome(x, yin, z) {
+  let n = fbm2(x, z, 0.01);
+  let n2 = perlin2(x, z, 0.04)
+  let y = yin + 4*fbm2(x,z, 0.04, 0.0);
   if (y > 3 * height / 4 ) return "snow";
-  if (y > height / 2) {
-    if (n < 0.1) return "forest";
-    else if (n < 0.4) return "plains";
-    else return "desert";
+  if (y > height / 2 - height/10) {
+    if (turbulence2(x+n2, z, 0.02) < 0.2
+        && yin >height/2 && yin < height/2 +5 ) return "water";
+    if (n < 0.2) return "forest";
+    else if (n <0.4) return "plains";
+    return "desert";
   }
-  if(y > height/2 - height/14) return "dirt";
+  if(y > height / 2 - height / 8) return "dirt";
   if (true) return "stone";
 }
 

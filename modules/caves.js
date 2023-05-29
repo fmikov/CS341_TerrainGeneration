@@ -44,7 +44,7 @@ function translateDomain(x, y, z, s){
     return new THREE.Vector3(x+sw, y+sh, z+sw);
 }
 
-function turbulence3(x, y, z) {
+function turbulence3(x, y, z, freq_multiplier = 0.2, ampl_multiplier = 0.2) {
 	var turbulence = 0.0;
 
     //same implementation as the one we used in the textures exercice
@@ -53,7 +53,7 @@ function turbulence3(x, y, z) {
         const point = new THREE.Vector3(x, y, z);
         const result = eval_point.multiply(point);
         
-        turbulence += Math.pow(ampl_multiplier, i) * Math.abs(perlin3(result.x, result.y, result.z, 0.08));
+        turbulence += Math.pow(ampl_multiplier, i) * Math.abs(perlin3(result.x, result.y, result.z, 0.06));
     }
     return turbulence;
 }
@@ -71,7 +71,7 @@ function fbm3(x, y, z) {
     return fbm;
 }
 
-function fbm2(x, y, scale, offset, freq_multiplier = 0.17, ampl_multiplier = 0.2, num_octaves = 4) {
+function fbm2(x, y, scale, offset = 0, freq_multiplier = 0.17, ampl_multiplier = 0.2, num_octaves = 4) {
     var fbm = 0.0;
     for (var i = 0; i < num_octaves; i++) {
         const eval_point = new THREE.Vector2(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
@@ -83,7 +83,7 @@ function fbm2(x, y, scale, offset, freq_multiplier = 0.17, ampl_multiplier = 0.2
     return fbm;
   }
   
-function turbulence2(x, y, scale, offset, freq_multiplier = 0.17, ampl_multiplier = 0.2, num_octaves = 4) {
+function turbulence2(x, y, scale = 0.05, offset = 0, freq_multiplier = 0.17, ampl_multiplier = 0.2, num_octaves = 4) {
     var fbm = 0.0;
     for (var i = 0; i < num_octaves; i++) {
         const eval_point = new THREE.Vector2(Math.pow(freq_multiplier, i), Math.pow(freq_multiplier, i));
@@ -131,6 +131,7 @@ function lerp(a, b, t) {
 const continentalness = createLinearInterpolator([0.1, 1], [0.37, 0.1], [0.4, 0.1], [0.41, 0.4], [0.53, 0.5], [0.55, 0.8], [0.7, 0.9], [1, 1]);
 const erosion = createLinearInterpolator([0., 1], [0.15, 0.7], [0.29, 0.5], [0.33, 0.58], [0.45, 0.1], [0.8, 0.08], [0.82, 0.25], [0.9, 0.25], [0.91, 0.1]);
 const peaks = createLinearInterpolator([0., 0.], [0.1, 0.1], [0.35, 0.33], [0.5, 0.35], [0.7, 0.85], [0.8, 1], [1, 0.9]);
+const squashing = createLinearInterpolator([0., 1,], [0.3, 0.6], [0.6, 0.63], [0.7, 0.55], [0.8, 0.65], [0.87, 1], [1, 0]);
 
 
 
@@ -152,19 +153,18 @@ function getTerrainAndCaves(x, y, z){
 }
 
 function caves(x,y,z){
-    //return 1;
-    return turbulence3(x,y,z) - perlin3(x,y,z, 0.03);
+    return turbulence3(x,y,z, 2) - perlin3(x,y,z, 0.05);
 }
 
 function terrain(x,y,z){
-    var c = (perlin2(x, z, 0.02, 0) + 1) / 2;
+    var c = (perlin2(x, z, 0.005, 0) + 1) / 2;
     var e = (perlin2(x, z, 0.01, 0) + 1) / 2;
-    var p = (turbulence2(x, z, 0.015, 0) + 1) / 2;
-    
+    var p = (turbulence2(x, z, 0.0015, 0) + 1) / 2;
+
     // Subtract erosion from peaks, ensuring the result is not negative
     var adjustedPeaks = Math.max(0.01, peaks(p) - erosion(e));
 
-    return Math.pow(height*continentalness(c), adjustedPeaks);
+    return Math.pow(height*continentalness(c)*peaks(p)*10, erosion(e));
   }
 
 function returnValue(x, y, z){
@@ -180,7 +180,7 @@ function returnValue(x, y, z){
     // let resultValue = lerp(terrainValue, caveValue, blendFactor);
 
     var t = getTerrainAndCaves(x,y,z);
-    if(y < t[1]+((caveFalloff(y)*(height/2))) && t[0]*(1+caveFalloff(y)) > 0.3){
+    if(y + 10*perlin2(x,z,0.04) < t[1]+((caveFalloff(y)*(height/2))) && t[0]*(1+caveFalloff(y)) > 0.3){
         return 1;
     }
     return 0;
@@ -217,4 +217,4 @@ function overhangs(x, y, z){
 //maybe height bias, density (perlin3d output) decreased at higher levels, increased at lower.
 
 
-export{returnValue, updateAmplMultiplier, updateNumOctaves, updateFreqMultiplier, fbm2}
+export{returnValue, updateAmplMultiplier, updateNumOctaves, updateFreqMultiplier, fbm2, turbulence2}
