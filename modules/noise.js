@@ -1,8 +1,3 @@
-import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
-import { height, size } from '../main';
-
-const r = Math;
-
 function Grad(x, y, z) {
   this.x = x; this.y = y; this.z = z;
 }

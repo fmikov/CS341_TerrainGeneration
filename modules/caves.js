@@ -2,14 +2,6 @@ import * as THREE from 'https://unpkg.com/three@0.126.1/build/three.module.js';
 import { height, size, width } from '../main';
 import { simplex3, perlin3, simplex2, perlin2 } from './noise';
 
-/**
- * This file returns the final noise value to main.js in the returnValue function 
- * We get the noise function from noise.js, with the function getNoiseValue(). 
- * At the moment you have to change the function you want to use inside getNoiseValue() itself.
- * The turbulence and FBM functions use the noise function of getNoiseValue();
- */
-
-
 // Constants for FBM
 var freq_multiplier = 0.87;
 var ampl_multiplier = 0.2;
@@ -159,7 +151,7 @@ function caves(x,y,z){
 function terrain(x,y,z){
     var c = (perlin2(x, z, 0.005, 0) + 1) / 2;
     var e = (perlin2(x, z, 0.01, 0) + 1) / 2;
-    var p = (turbulence2(x, z, 0.0015, 0) + 1) / 2;
+    var p = (turbulence2(x/2, z/2, 0.0015, 0) + 1) / 2;
 
     // Subtract erosion from peaks, ensuring the result is not negative
     var adjustedPeaks = Math.max(0.01, peaks(p) - erosion(e));
@@ -168,17 +160,15 @@ function terrain(x,y,z){
   }
 
 function returnValue(x, y, z){
-    // let [caveValue, terrainValue] = getTerrainAndCaves(x, y, z);
+    // let temp = y + 10*perlin2(x,z,0.04);
+    // let terr = terrain(x,y,z);
+    // if((temp) < terr ) return 1;
+    // return 0;
 
-    // // Blend factor based on y-coordinate
-    // let blendFactor = Math.min(Math.max(y / height, 0), 1);
 
-    // // You could also use a noise function for the blend factor
-    // // blendFactor = (perlin3(x, y, z, 0.08) + 1) / 2;
 
-    // // Blend the terrain and cave values
-    // let resultValue = lerp(terrainValue, caveValue, blendFactor);
 
+    //this was for testing, worse results I think
     var t = getTerrainAndCaves(x,y,z);
     if(y + 10*perlin2(x,z,0.04) < t[1]+((caveFalloff(y)*(height/2))) && t[0]*(1+caveFalloff(y)) > 0.3){
         return 1;
@@ -186,19 +176,13 @@ function returnValue(x, y, z){
     return 0;
 
 
-    const terrainHeight = terrain(x, y, z); // This should be your 2D noise function
-    const caveNoiseValue = caves(x, y, z); // This should be your 3D noise function
+    const terrainHeight = terrain(x, y, z);
+    const caveNoiseValue = caves(x, y, z);
     
-    // Scale the terrain height to match the range you want (e.g., [0, 150]).
     const scaledTerrainHeight = terrainHeight * height;
 
-    // Let's say you want caves to start forming when the caveNoiseValue is less than 0.4
     const isCave = caveNoiseValue < 0.4 ? 1 : 0;
 
-    // Now, let's make a rule:
-    // If the current y is less than the scaledTerrainHeight, it should always be a solid block (value 1), 
-    // unless it's a cave (in which case it's 0). 
-    // If the current y is above the terrain height, it's an air block (value 0).
     var blockValue = y <= scaledTerrainHeight ? (1 - isCave) : 0;
     var squash = (terrainHeight - y) * terrainHeight*0.9;
     return caveNoiseValue +squash;
